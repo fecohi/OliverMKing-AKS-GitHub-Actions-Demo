@@ -59,11 +59,6 @@ jobs:
         docker build "$GITHUB_WORKSPACE/azure-vote" -f  "azure-vote/Dockerfile" -t ${{ env.REGISTRYNAME }}.azurecr.io/${{ env.IMAGENAME }}:${{ github.sha }} --label dockerfile-path=azure-vote/Dockerfile
         docker push ${{ env.REGISTRYNAME }}.azurecr.io/${{ env.IMAGENAME }}:${{ github.sha }}
     
-    - uses: azure/k8s-set-context@v1
-      id: login
-      with:
-         kubeconfig: ${{ secrets.aks_deploymentcentertest_kubeConfig }}
-    
     - name: Create namespace
       run: |
         namespacePresent=`kubectl get namespace | grep ${{ env.NAMESPACE}} | wc -l`
