@@ -47,12 +47,6 @@ jobs:
           az aks get-credentials --resource-group ${{ env.RESOURCEGROUPNAME }} --name ${{ env.CLUSTERNAME }} --file $GITHUB_WORKSPACE/kubeconfig
           echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig" >> $GITHUB_ENV
 
-    - name: Apply Resource Quota for tenant
-      run: |
-        kubectl apply -f ./k8s/resourcequota.yaml --namespace ${{ github.event.inputs.tenant }}
-        echo `kubectl get resourcequotas -n ${{ github.event.inputs.tenant }}`
-        
-
     - name: Get ACR credentials
       id: getACRCred
       run: |
