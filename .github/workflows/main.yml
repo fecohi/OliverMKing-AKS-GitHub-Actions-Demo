@@ -21,9 +21,10 @@ jobs:
           service_principal_password: ${{ secrets.service_principal_password }}
           tenant: ${{ secrets.tenant }}
           registry: ${{ secrets.registry }}
+          repository: azuredemos
           image:  azure-vote-front
           folder: azure-vote
-          branch: master
+          branch: main
           tag: ${{ github.sha }}
       - name: Azure login
         id: login
@@ -46,5 +47,5 @@ jobs:
           namespace: 'default'
           manifests: |
              manifests/azure-vote-all-in-one-redis.yaml
-          images: '${{ secrets.registry }}.azurecr.io/azure-vote-front:${{ github.sha }}'
+          images: '${{ secrets.registry }}.azurecr.io/azuredemos/azure-vote-front:${{ github.sha }}'
           pull-images: false
