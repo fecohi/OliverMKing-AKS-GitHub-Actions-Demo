@@ -5,10 +5,10 @@ name: devhubazuseragent
             - main
     workflow_dispatch: {}
 env:
-    ACR_RESOURCE_GROUP: deployment-center
+    ACR_RESOURCE_GROUP: fecohi-demos-rg
     AZURE_CONTAINER_REGISTRY: deploymentcenterregistry
     CLUSTER_NAME: deploymentcenter
-    CLUSTER_RESOURCE_GROUP: deployment-center
+    CLUSTER_RESOURCE_GROUP: fecohi-demos-rg
     CONTAINER_NAME: newimage
     DEPLOYMENT_MANIFEST_PATH: |
         ./manifests/azure-vote-backend-deployment.yaml
