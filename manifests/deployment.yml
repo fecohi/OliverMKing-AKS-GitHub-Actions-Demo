@@ -1,19 +1,19 @@
 apiVersion : apps/v1
 kind: Deployment
 metadata:
-  name: "deploymentcentertest-9fd7"
+  name: "azure-front"
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: "deploymentcentertest-9fd7"
+      app: "azure-front"
   template:
     metadata:
       labels:
-        app: "deploymentcentertest-9fd7"
+        app: "azure-front"
     spec:
       containers:
-        - name: "deploymentcentertest-9fd7"
-          image: "deploymentcenter.azurecr.io/deploymentcentertest"
+        - name: "azure-front"
+          image: "fecohidemoaksacr.azurecr.io/azure-front"
           ports:
           - containerPort: 80

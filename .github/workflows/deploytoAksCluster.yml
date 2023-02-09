@@ -1,5 +1,34 @@
 name: Deploy application to AKS
-on: [pull_request]
+#on: [pull_request]
+on: 
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment Environment
+        default: prod
+        required: true
+
+env:
+  RESOURCEGROUPNAME: "fecohidemosrg"
+  LOCATION: "West Europe"
+  LOCATION-RG: "westeurope"
+  SUBSCRIPTIONID: "d50dcefe-449d-477e-911f-35f7cc5fa517"
+  IMAGENAME: "azure-front"
+  REGISTRYSKU: "Standard"
+  REGISTRYNAME: "fecohidemoaksacr"
+  REGISTRYLOCATION: "West Europe"
+  CLUSTERNAME: "fecohidemoaks"
+  APPINSIGHTSLOCATION: "West Europe"
+  CLUSTERLOCATION: "West Europe"
+  AGENTCOUNT: "1"
+  AGENTVMSIZE: "Standard_B4ms"
+  KUBERNETESVERSION: 1.25.4
+  OMSLOCATION: "West Europe"
+  OMSWORKSPACENAME: "fecohidemoaks2116"
+  HTTPSAPPLICATIONROUTINGENABLED: false
+  KUBERNETESAPI: "apps/v1"
+  NAMESPACE: "fecohidemoaks52c7"
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -11,25 +40,24 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Create ACR
-      id: create-acr
+    - name: Get ACR Credentials
+      id: getACRCred
       run: |
-        az acr create -n deploymentcenter -g fecohi-demos-rg --location "West Europe" --sku Standard --admin-enabled
-        echo "::set-output name=acr_username::`az acr credential show -n deploymentcenter --query username | xargs`"
-        echo "::set-output name=acr_password::`az acr credential show -n deploymentcenter --query passwords[0].value | xargs`"
-        echo "::add-mask::`az acr credential show -n deploymentcenter --query passwords[0].value | xargs`"
+          echo "acr_username=$(az acr credential show -n ${{ env.REGISTRYNAME }} --query username)"  >> $GITHUB_OUTPUT
+          echo "acr_password=$(az acr credential show -n ${{ env.REGISTRYNAME }} --query passwords[0].value)"  >> $GITHUB_OUTPUT
+          echo "::add-mask::`az acr credential show -n ${{ env.REGISTRYNAME }} --query passwords[0].value`"
 
     - uses: azure/docker-login@v1
       with:
-        login-server: deploymentcenter.azurecr.io
-        username: ${{ steps.create-acr.outputs.acr_username }}
-        password: ${{ steps.create-acr.outputs.acr_password }}
+        login-server: ${{ env.REGISTRYNAME }}.azurecr.io
+        username: ${{ steps.getACRCred.outputs.acr_username }}
+        password: ${{ steps.getACRCred.outputs.acr_password }}
 
     - name: Build and push image to ACR
       id: build-image
       run: |
-        docker build "$GITHUB_WORKSPACE/azure-vote" -f  "azure-vote/Dockerfile" -t deploymentcenter.azurecr.io/deploymentcentertest:${{ github.sha }} --label dockerfile-path=azure-vote/Dockerfile
-        docker push deploymentcenter.azurecr.io/deploymentcentertest:${{ github.sha }}
+        docker build "$GITHUB_WORKSPACE/azure-vote" -f  "azure-vote/Dockerfile" -t ${{ env.REGISTRYNAME }}.azurecr.io/${{ env.IMAGENAME }}:${{ github.sha }} --label dockerfile-path=azure-vote/Dockerfile
+        docker push ${{ env.REGISTRYNAME }}.azurecr.io/${{ env.IMAGENAME }}:${{ github.sha }}
     
     - uses: azure/k8s-set-context@v1
       id: login
@@ -38,27 +66,27 @@ jobs:
     
     - name: Create namespace
       run: |
-        namespacePresent=`kubectl get namespace | grep deploymentcentertestbe49 | wc -l`
+        namespacePresent=`kubectl get namespace | grep ${{ env.NAMESPACE}} | wc -l`
         if [ $namespacePresent -eq 0 ]
         then
-            echo `kubectl create namespace deploymentcentertestbe49`
+            echo `kubectl create namespace ${{ env.NAMESPACE}}`
         fi
 
     - uses: azure/k8s-create-secret@v1
       with:
-        namespace: deploymentcentertestbe49
-        container-registry-url: deploymentcenter.azurecr.io
-        container-registry-username: ${{ steps.create-acr.outputs.acr_username }}
-        container-registry-password: ${{ steps.create-acr.outputs.acr_password }}
-        secret-name: deploymentcedockerauth
-       
-    - uses: azure/k8s-deploy@v1.2
+        namespace: ${{ github.event.inputs.tenant }}
+        container-registry-url: ${{ env.REGISTRYNAME }}.azurecr.io
+        container-registry-username: ${{ steps.getACRCred.outputs.acr_username }}
+        container-registry-password: ${{ steps.getACRCred.outputs.acr_password }}
+        secret-name: ${{ env.CLUSTERNAME }}dockerauth
+          
+    - uses: azure/k8s-deploy@v1
       with:
-        namespace: deploymentcentertestbe49
+        namespace: ${{ github.event.inputs.tenant }}
         manifests: |
           manifests/deployment.yml
           manifests/service.yml
         images: |
-          deploymentcenter.azurecr.io/deploymentcentertest:${{ github.sha }}
+          ${{ env.REGISTRYNAME }}.azurecr.io/${{ env.IMAGENAME }}:${{ github.sha }}
         imagepullsecrets: |
-          deploymentcedockerauth   
+          ${{ env.CLUSTERNAME }}dockerauth
