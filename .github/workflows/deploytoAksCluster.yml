@@ -47,18 +47,11 @@ jobs:
           az aks get-credentials --resource-group ${{ env.RESOURCEGROUPNAME }} --name ${{ env.CLUSTERNAME }} --file $GITHUB_WORKSPACE/kubeconfig
           echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig" >> $GITHUB_ENV
 
-    - name: Get ACR credentials
-      id: getACRCred
-      run: |
-           echo "acr_username=$(az acr credential show -n ${{ env.REGISTRYNAME }} --query username | xargs)"  >> $GITHUB_OUTPUT
-           echo "acr_password=$(az acr credential show -n ${{ env.REGISTRYNAME }} --query passwords[0].value | xargs)"  >> $GITHUB_OUTPUT
-           echo "::add-mask::`az acr credential show -n ${{ env.REGISTRYNAME }} --query passwords[0].value | xargs`"
-
     - uses: azure/docker-login@v1
       with:
         login-server: ${{ env.REGISTRYNAME }}.azurecr.io
-        username: ${{ steps.getACRCred.outputs.acr_username }}
-        password: ${{ steps.getACRCred.outputs.acr_password }}
+        username: ${{ secrets.ACR_USER_NAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
 
     - name: Build and push image to ACR
       id: build-image
@@ -83,8 +76,8 @@ jobs:
       with:
         namespace: ${{ github.event.inputs.tenant }}
         container-registry-url: ${{ env.REGISTRYNAME }}.azurecr.io
-        container-registry-username: ${{ steps.getACRCred.outputs.acr_username }}
-        container-registry-password: ${{ steps.getACRCred.outputs.acr_password }}
+        container-registry-username: ${{ secrets.ACR_USER_NAME }}
+        container-registry-password: ${{ secrets.ACR_PASSWORD }}
         secret-name: ${{ env.CLUSTERNAME }}dockerauth
           
     - uses: azure/k8s-deploy@v1
