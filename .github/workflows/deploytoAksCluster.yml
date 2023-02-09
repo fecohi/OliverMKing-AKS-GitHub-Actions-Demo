@@ -1,4 +1,5 @@
-on: [push]
+name: Deploy application to AKS
+on: [pull_request]
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
